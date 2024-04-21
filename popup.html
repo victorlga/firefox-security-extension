@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Third-Party Domains</title>
+  <title>FireFoxSec</title>
   <style>
     body { font-family: Arial, sans-serif; margin: 8px; }
     ul { padding-left: 20px; }
@@ -9,8 +9,12 @@
   </style>
 </head>
 <body>
-  <h1>Third-Party Domains</h1>
+  <h3>Local Storage Detector</h3>
+  <button id="checkStorageBtn">Check Local Storage</button>
+  <p id="resultLocalStorage"></p>
+  <script src="storage.js"></script>
+  <h3>Third-Party Domains</h3>
   <ul id="domainList"></ul>
-  <script src="popup.js"></script>
+  <script src="domain.js"></script>
 </body>
 </html>
