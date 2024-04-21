@@ -37,11 +37,26 @@ chrome.webRequest.onBeforeRequest.addListener(
   []
 );
 
+function countCookies(domain) {
+  return new Promise(resolve => {
+    chrome.cookies.getAll({domain}, function(cookies) {
+      resolve(cookies.length);
+    });
+  });
+}
+
 // Handle messages from the popup
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
   if (msg.query === 'getThirdPartyDomains') {
     sendResponse(Array.from(thirdPartyRequests[msg.tabId] || []));
+  }
+
+  if (msg.action === "countCookies") {
+    countCookies(msg.domain).then(count => {
+      sendResponse({count});
+    });
+    return true;  // Keep the message channel open for the response
   }
 
   if (msg.query === "checkLocalStorage") {

@@ -23,6 +23,7 @@
     "activeTab",
     "storage",
     "tabs",
+    "cookies",
     "<all_urls>"
   ]
 }
