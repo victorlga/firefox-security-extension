@@ -9,13 +9,18 @@
     .container { display: flex; justify-content: space-between; margin-top: 20px; }
     .column { display: flex; flex-direction: column; margin-left: 10px; margin-right: 10px;}
     .cookie-count { margin-bottom: 10px; }
+    #results { margin-top: 20px; }
+    .result { margin-bottom: 10px; }
   </style>
   </style>
 </head>
 <body>
 
-  <h3>Local Storage Count</h3>
-  <p id="resultLocalStorage"></p>
+  <h3>Local Storage</h3>
+  <div id="results">
+    <div id="resultLocalStorage" class="result">Local Storage Items: 0</div>
+    <div id="resultSessionStorage" class="result">Session Storage Items: 0</div>
+  </div>
   <script src="storage.js"></script>
   <hr>
 

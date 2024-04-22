@@ -67,6 +67,21 @@ function countCookies(domain) {
   });
 }
 
+function checkStorageForTab(tabId, sendResponse) {
+  chrome.tabs.executeScript(tabId, {
+    code: `({
+      localStorageCount: Object.keys(localStorage).length,
+      sessionStorageCount: Object.keys(sessionStorage).length
+    })`
+  }, function(results) {
+    if (chrome.runtime.lastError) {
+      sendResponse({error: chrome.runtime.lastError.message});
+    } else {
+      sendResponse({data: results[0]});
+    }
+  });
+}
+
 
 // Handle messages from the popup
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
@@ -79,20 +94,16 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     countCookies(msg.domain).then(cookieDetails => {
       sendResponse(cookieDetails);
     });
-    return true;  // Keep the message channel open for the response
+    return true;
   }
 
-  if (msg.query === "checkLocalStorage") {
+  if (msg.query === "checkStorage") {
     chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-      chrome.tabs.executeScript(tabs[0].id, {
-        code: 'Object.keys(localStorage).length'
-      }, function(results) {
-        if (chrome.runtime.lastError) {
-          sendResponse({error: chrome.runtime.lastError.message});
-        } else {
-          sendResponse({data: results[0]});
-        }
-      });
+      if (tabs.length > 0) {
+        checkStorageForTab(tabs[0].id, sendResponse);
+      } else {
+        sendResponse({error: "No active tab found"});
+      }
     });
     return true;
   }
