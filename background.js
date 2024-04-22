@@ -1,16 +1,16 @@
 const thirdPartyRequests = {};
+let gradeScore = 0;
 
 chrome.tabs.onRemoved.addListener(function(tabId) {
   delete thirdPartyRequests[tabId];
+  gradeScore = 0;
 });
 
 function getBaseDomain(domain) {
   const parts = domain.split('.').reverse();
   if (parts.length >= 2) {
-    // This simple heuristic assumes the last part is the TLD
     const tld = parts[0];
     const sld = parts[1];
-    // More complex cases, like 'co.uk' etc., are not handled by this code.
     return `${sld}.${tld}`;
   }
   return domain;
@@ -94,14 +94,22 @@ function checkStorageForTab(tabId, sendResponse) {
   });
 }
 
+function calculateGrade() {
+  if (gradeScore <= 1) return 'A';
+  else if (gradeScore <= 3) return 'B';
+  else if (gradeScore <= 5) return 'C';
+  else if (gradeScore <= 7) return 'D';
+  else return 'E';
+}
+
 // Handle messages from the popup
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
-  if (msg.query === 'getThirdPartyDomains') {
+  if (msg.action === 'getThirdPartyDomains') {
     sendResponse(Array.from(thirdPartyRequests[msg.tabId] || []));
   }
 
-  if (msg.type === 'canvasFingerprintDetected') {
+  if (msg.action === 'canvasFingerprintDetected') {
     chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
       if (!chrome.runtime.lastError && tabs.length > 0) {
         chrome.browserAction.setBadgeText({text: '!', tabId: tabs[0].id});
@@ -111,6 +119,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     sendResponse({status: 'Detection alert updated'});
   }
 
+  if (msg.action === "calculateGrade") {
+    const grade = calculateGrade();
+    sendResponse({grade: grade});
+  }
+
   if (msg.action === "countCookies") {
     countCookies(msg.domain).then(cookieDetails => {
       sendResponse(cookieDetails);
@@ -118,7 +131,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return true;
   }
 
-  if (msg.query === "checkStorage") {
+  if (msg.action === "checkStorage") {
     chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
       if (tabs.length > 0) {
         checkStorageForTab(tabs[0].id, sendResponse);
@@ -132,6 +145,9 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
 // Ensure content script is injected when tab is updated
 chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
+  if (changeInfo.status === 'loading') {
+    gradeScore = 0; // Reset when a new page starts loading
+  }
   if (changeInfo.status === 'complete' && tab.url) {
     chrome.tabs.executeScript(tabId, {file: 'content.js'});
   }

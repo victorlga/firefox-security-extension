@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
-  chrome.runtime.sendMessage({query: "checkStorage"}, function(response) {
+  chrome.runtime.sendMessage({action: "checkStorage"}, function(response) {
     if (response.error) {
       console.error('Error:', response.error);
       document.getElementById("resultLocalStorage").textContent = 'Error checking storage';

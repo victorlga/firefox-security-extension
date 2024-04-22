@@ -4,13 +4,13 @@ const context = document.createElement('canvas').getContext('2d');
 const originalToDataURL = CanvasRenderingContext2D.prototype.toDataURL;
 CanvasRenderingContext2D.prototype.toDataURL = function() {
   alert('Canvas fingerprinting attempt detected!');
-  chrome.runtime.sendMessage({type: 'canvasFingerprintDetected'});
+  chrome.runtime.sendMessage({action: 'canvasFingerprintDetected'});
   return originalToDataURL.apply(this, arguments);
 };
 
 const originalGetImageData = CanvasRenderingContext2D.prototype.getImageData;
 CanvasRenderingContext2D.prototype.getImageData = function() {
   alert('Canvas fingerprinting attempt detected!');
-  chrome.runtime.sendMessage({type: 'canvasFingerprintDetected'});
+  chrome.runtime.sendMessage({action: 'canvasFingerprintDetected'});
   return originalGetImageData.apply(this, arguments);
 };
