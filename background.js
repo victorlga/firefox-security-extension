@@ -4,26 +4,38 @@ chrome.tabs.onRemoved.addListener(function(tabId) {
   delete thirdPartyRequests[tabId];
 });
 
-// Listen to all web requests
+function getBaseDomain(domain) {
+  const parts = domain.split('.').reverse();
+  if (parts.length >= 2) {
+    // This simple heuristic assumes the last part is the TLD
+    const tld = parts[0];
+    const sld = parts[1];
+    // More complex cases, like 'co.uk' etc., are not handled by this code.
+    return `${sld}.${tld}`;
+  }
+  return domain;
+}
+
 chrome.webRequest.onBeforeRequest.addListener(
   function(details) {
-    const parser = document.createElement('a');
-    parser.href = details.url;
-    const domain = parser.hostname;
+    const url = new URL(details.url);
+    const domain = url.hostname;
     const tabId = details.tabId;
 
     if (tabId < 0) return; // Ignore requests from background processes
 
-    chrome.tabs.get(tabId, tab => {
+    chrome.tabs.get(tabId, function(tab) {
       if (chrome.runtime.lastError) {
         // Handle errors such as when the tab has been closed
         return;
       }
 
       const tabDomain = new URL(tab.url).hostname;
+      const baseDomain = getBaseDomain(domain);
+      const baseTabDomain = getBaseDomain(tabDomain);
 
-      // Check if the domain is different from the tab's main domain
-      if (domain !== tabDomain) {
+      // Check if the base domain is different from the tab's base main domain
+      if (baseDomain !== baseTabDomain) {
         // Store third-party requests
         if (!thirdPartyRequests[tabId]) {
           thirdPartyRequests[tabId] = new Set();
@@ -35,6 +47,7 @@ chrome.webRequest.onBeforeRequest.addListener(
   {urls: ["<all_urls>"]},
   []
 );
+
 
 function countCookies(domain) {
   return new Promise(resolve => {
