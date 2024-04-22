@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
       var domain = url.hostname;
   
       chrome.runtime.sendMessage({action: "countCookies", domain: domain}, function(response) {
-        document.getElementById('cookie-count').textContent = 'Cookies: ' + response.count;
+        document.getElementById('cookieCount').textContent = response.count;
       });
     });
   });
