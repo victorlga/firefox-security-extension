@@ -6,6 +6,10 @@
     body { font-family: Arial, sans-serif; margin: 8px; }
     ul { padding-left: 20px; }
     li { margin-bottom: 5px; }
+    .container { display: flex; justify-content: space-between; margin-top: 20px; }
+    .column { display: flex; flex-direction: column; margin-left: 10px; margin-right: 10px;}
+    .cookie-count { margin-bottom: 10px; }
+  </style>
   </style>
 </head>
 <body>
@@ -16,7 +20,17 @@
   <hr>
 
   <h3>Cookies Count</h3>
-  <p id="cookieCount"></p>
+  <div>Total cookies: <span id="totalCookies">0</span></div>
+  <div class="container">
+    <div class="column">
+      <div class="cookie-count">First-party cookies: <span id="firstPartyCookies">0</span></div>
+      <div class="cookie-count">Third-party cookies: <span id="thirdPartyCookies">0</span></div>
+    </div>
+    <div class="column">
+      <div class="cookie-count">Session cookies: <span id="sessionCookies">0</span></div>
+      <div class="cookie-count">Persistent cookies: <span id="persistentCookies">0</span></div>
+    </div>
+  </div>
   <script src="cookie.js"></script>
   <hr>
 

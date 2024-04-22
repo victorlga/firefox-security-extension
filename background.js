@@ -39,11 +39,34 @@ chrome.webRequest.onBeforeRequest.addListener(
 
 function countCookies(domain) {
   return new Promise(resolve => {
-    chrome.cookies.getAll({domain}, function(cookies) {
-      resolve(cookies.length);
+    chrome.cookies.getAll({}, function(cookies) {
+      const cookieDetails = {
+        total: cookies.length,
+        firstParty: 0,
+        thirdParty: 0,
+        sessionCookies: 0,
+        persistentCookies: 0
+      };
+
+      cookies.forEach(cookie => {
+        if (cookie.domain === domain) {
+          cookieDetails.firstParty++;
+        } else {
+          cookieDetails.thirdParty++;
+        }
+
+        if ("session" in cookie && cookie.session) {
+          cookieDetails.sessionCookies++;
+        } else {
+          cookieDetails.persistentCookies++;
+        }
+      });
+
+      resolve(cookieDetails);
     });
   });
 }
+
 
 // Handle messages from the popup
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
@@ -53,8 +76,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
 
   if (msg.action === "countCookies") {
-    countCookies(msg.domain).then(count => {
-      sendResponse({count});
+    countCookies(msg.domain).then(cookieDetails => {
+      sendResponse(cookieDetails);
     });
     return true;  // Keep the message channel open for the response
   }
@@ -71,6 +94,6 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         }
       });
     });
-    return true; // Indicate that sendResponse will be asynchronous
+    return true;
   }
 });

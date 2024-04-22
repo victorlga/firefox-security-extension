@@ -5,7 +5,11 @@ document.addEventListener('DOMContentLoaded', function() {
       var domain = url.hostname;
   
       chrome.runtime.sendMessage({action: "countCookies", domain: domain}, function(response) {
-        document.getElementById('cookieCount').textContent = response.count;
+        document.getElementById('totalCookies').textContent = response.total;
+        document.getElementById('firstPartyCookies').textContent = response.firstParty;
+        document.getElementById('thirdPartyCookies').textContent = response.thirdParty;
+        document.getElementById('sessionCookies').textContent = response.sessionCookies;
+        document.getElementById('persistentCookies').textContent = response.persistentCookies;
       });
     });
   });
