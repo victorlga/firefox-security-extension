@@ -30,7 +30,6 @@ chrome.webRequest.onBeforeRequest.addListener(
         }
         thirdPartyRequests[tabId].add(domain);
       }
-
     });
   },
   {urls: ["<all_urls>"]},
@@ -82,12 +81,21 @@ function checkStorageForTab(tabId, sendResponse) {
   });
 }
 
-
 // Handle messages from the popup
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
   if (msg.query === 'getThirdPartyDomains') {
     sendResponse(Array.from(thirdPartyRequests[msg.tabId] || []));
+  }
+
+  if (msg.type === 'canvasFingerprintDetected') {
+    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+      if (!chrome.runtime.lastError && tabs.length > 0) {
+        chrome.browserAction.setBadgeText({text: '!', tabId: tabs[0].id});
+        chrome.browserAction.setBadgeBackgroundColor({color: '#FF0000', tabId: tabs[0].id});
+      }
+    });
+    sendResponse({status: 'Detection alert updated'});
   }
 
   if (msg.action === "countCookies") {
@@ -108,3 +116,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return true;
   }
 });
+
+// Ensure content script is injected when tab is updated
+chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
+  if (changeInfo.status === 'complete' && tab.url) {
+    chrome.tabs.executeScript(tabId, {file: 'content.js'});
+  }
+});
+
