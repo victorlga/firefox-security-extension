@@ -94,18 +94,26 @@ function checkStorageForTab(tabId, sendResponse) {
   });
 }
 
-let suspectBehaviorDetected = false;
+const suspectBehaviorByTab = {};
 
 chrome.webRequest.onBeforeRequest.addListener(
   function(details) {
     const url = new URL(details.url);
     const port = url.port || (url.protocol === "https:" ? 443 : 80);  // Default ports for HTTP and HTTPS
+    const tabId = details.tabId;
 
-    if (port !== "80" && port !== "443") {
-      suspectBehaviorDetected = true; // Set the flag if a non-standard port is used
+    if (tabId < 0) return; // Ignore requests from background processes
+
+    // Initialize if undefined
+    if (!suspectBehaviorByTab[tabId]) {
+      suspectBehaviorByTab[tabId] = false;
     }
-    else {
-      suspectBehaviorDetected = false;
+
+    // Update the suspect behavior flag specific to the tab
+    if (port !== "80" && port !== "443") {
+      suspectBehaviorByTab[tabId] = true;
+    } else {
+      suspectBehaviorByTab[tabId] = false;
     }
   },
   {urls: ["<all_urls>"]},
@@ -161,7 +169,9 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
 
   if (msg.action === "checkPorts") {
-    sendResponse({suspect: suspectBehaviorDetected});
+    const tabId = msg.tabId;  // Ensure that msg includes tabId
+    const isSuspect = suspectBehaviorByTab[tabId] || false;  // Default to false if no data exists
+    sendResponse({suspect: isSuspect});
   }
 });
 
@@ -169,9 +179,6 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
   if (changeInfo.status === 'loading') {
     gradeScore = 0; // Reset when a new page starts loading
-  }
-  if (changeInfo.status === 'complete' && tab.url) {
-    chrome.tabs.executeScript(tabId, {file: 'content.js'});
   }
 });
 
