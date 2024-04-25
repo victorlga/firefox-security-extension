@@ -94,6 +94,24 @@ function checkStorageForTab(tabId, sendResponse) {
   });
 }
 
+let suspectBehaviorDetected = false;
+
+chrome.webRequest.onBeforeRequest.addListener(
+  function(details) {
+    const url = new URL(details.url);
+    const port = url.port || (url.protocol === "https:" ? 443 : 80);  // Default ports for HTTP and HTTPS
+
+    if (port !== "80" && port !== "443") {
+      suspectBehaviorDetected = true; // Set the flag if a non-standard port is used
+    }
+    else {
+      suspectBehaviorDetected = false;
+    }
+  },
+  {urls: ["<all_urls>"]},
+  ["blocking"]
+);
+
 function calculateGrade() {
   if (gradeScore <= 1) return 'A';
   else if (gradeScore <= 3) return 'B';
@@ -140,6 +158,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       }
     });
     return true;
+  }
+
+  if (msg.action === "checkPorts") {
+    sendResponse({suspect: suspectBehaviorDetected});
   }
 });
 
