@@ -69,9 +69,3 @@ This formula calculates a grade score based on deductions for various privacy an
    * Local storage and session storage usage
 
 3. **Privacy Grade**: Click the "Check Grade" button to see a privacy score based on the features mentioned above.
-
-## Additional Resources
-
-- [Mozilla Firefox Extension Development](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons)
-- [WebExtensions Tutorial](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions)
-- [Chrome Extension Migration Guide (for moving from Chrome to Firefox)](https://extensionworkshop.com/documentation/develop/chrome-extension-migrate-to-firefox/)
