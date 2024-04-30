@@ -1,5 +1,7 @@
 const thirdPartyRequests = {};
-let gradeScore = 0;
+const cookieDetailsByTabId = {};
+const storageCountsByTabId = {};
+const hasUnusualPort = {};
 
 chrome.tabs.onRemoved.addListener(function(tabId) {
   delete thirdPartyRequests[tabId];
@@ -49,10 +51,10 @@ chrome.webRequest.onBeforeRequest.addListener(
 );
 
 
-function countCookies(domain) {
+function countCookies(tabId, domain) {
   return new Promise(resolve => {
     chrome.cookies.getAll({}, function(cookies) {
-      const cookieDetails = {
+      const details = {
         total: cookies.length,
         firstParty: 0,
         thirdParty: 0,
@@ -62,22 +64,25 @@ function countCookies(domain) {
 
       cookies.forEach(cookie => {
         if (cookie.domain === domain) {
-          cookieDetails.firstParty++;
+          details.firstParty++;
         } else {
-          cookieDetails.thirdParty++;
+          details.thirdParty++;
         }
 
         if ("session" in cookie && cookie.session) {
-          cookieDetails.sessionCookies++;
+          details.sessionCookies++;
         } else {
-          cookieDetails.persistentCookies++;
+          details.persistentCookies++;
         }
       });
 
-      resolve(cookieDetails);
+      // Store the details in the global object under the tabId key
+      cookieDetailsByTabId[tabId] = details;
+      resolve(details);
     });
   });
 }
+
 
 function checkStorageForTab(tabId, sendResponse) {
   chrome.tabs.executeScript(tabId, {
@@ -89,7 +94,9 @@ function checkStorageForTab(tabId, sendResponse) {
     if (chrome.runtime.lastError) {
       sendResponse({error: chrome.runtime.lastError.message});
     } else {
-      sendResponse({data: results[0]});
+      const storageCounts = results[0];
+      storageCountsByTabId[tabId] = storageCounts; // Store counts in global object
+      sendResponse({data: storageCounts});
     }
   });
 }
@@ -120,11 +127,22 @@ chrome.webRequest.onBeforeRequest.addListener(
   ["blocking"]
 );
 
-function calculateGrade() {
-  if (gradeScore <= 1) return 'A';
-  else if (gradeScore <= 3) return 'B';
-  else if (gradeScore <= 5) return 'C';
-  else if (gradeScore <= 7) return 'D';
+function calculateGrade(tabId) {
+
+  let gradeScore = 10;
+  gradeScore -= thirdPartyRequests[tabId].size * 0.1;
+  gradeScore -= cookieDetailsByTabId[tabId].total * 0.01;
+  gradeScore -= storageCountsByTabId[tabId].localStorageCount * 0.1;
+  if (suspectBehaviorByTab[tabId] || false) {
+    gradeScore -= 1;
+  }
+
+  gradeScore = Math.max(0, gradeScore);
+
+  if (gradeScore > 8) return 'A';
+  else if (gradeScore > 6) return 'B';
+  else if (gradeScore > 4) return 'C';
+  else if (gradeScore > 2) return 'D';
   else return 'E';
 }
 
@@ -143,18 +161,33 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       }
     });
     sendResponse({status: 'Detection alert updated'});
+    return true;
   }
 
   if (msg.action === "calculateGrade") {
-    const grade = calculateGrade();
-    sendResponse({grade: grade});
+    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+      if (tabs.length > 0) {
+        const currentTabId = tabs[0].id;
+        const grade = calculateGrade(currentTabId);
+        sendResponse({grade: grade});
+      } else {
+        sendResponse({error: "No active tab found"});
+      }
+    });
+    return true; // This is necessary to use sendResponse asynchronously
   }
 
   if (msg.action === "countCookies") {
-    countCookies(msg.domain).then(cookieDetails => {
-      sendResponse(cookieDetails);
+    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+      if (tabs.length > 0) {
+        countCookies(tabs[0].id, msg.domain).then(cookieDetails => {
+          sendResponse(cookieDetails);
+        });
+      } else {
+        sendResponse({error: "No active tab found"});
+      }
     });
-    return true;
+    return true; // Indicates async response
   }
 
   if (msg.action === "checkStorage") {
@@ -171,6 +204,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.action === "checkPorts") {
     const tabId = msg.tabId;  // Ensure that msg includes tabId
     const isSuspect = suspectBehaviorByTab[tabId] || false;  // Default to false if no data exists
+    hasUnusualPort[tabId] = isSuspect;
     sendResponse({suspect: isSuspect});
   }
 });
