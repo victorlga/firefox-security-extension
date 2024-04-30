@@ -26,31 +26,32 @@ FireFoxSec counts the number of cookies and identifies the origin of these cooki
 
 ## Grade Calculation
 
-The extension calculates the user's privacy and security grade based on the following features:
+The privacy grade in FireFoxSec is calculated based on several factors that assess the security and privacy posture of the website you are visiting. The factors include all the features mentioned above, such as third-party requests, cookie count, local storage usage, and suspect behavior detection.
 
-1. **Third-Party Requests Blocking**: 20%
-   - If all third-party requests are blocked, 20% is added to the grade.
+Based on these factors, the privacy grade is calculated using the following formula:
 
-2. **Hook and Hijacking Detection (Non-standard Ports)**: 10%
-   - If no hook or hijacking attacks or non-standard ports are detected, 10% is added to the grade.
+```plaintext
+gradeScore = 10
+gradeScore -= thirdPartyRequests[tabId].size * 0.1
+gradeScore -= cookieDetailsByTabId[tabId].total * 0.01
+gradeScore -= storageCountsByTabId[tabId].localStorageCount * 0.1
 
-3. **Canvas Fingerprint Detection**: 20%
-   - If canvas fingerprinting attempts are detected, 20% is deducted from the grade.
+// Additional deduction if suspect behavior is detected
+if (suspectBehaviorByTab[tabId] || false) {
+  gradeScore -= 1
+}
 
-4. **Local Storage and Session Storage**: 20%
-   - If local storage and session storage are used sparingly (less than 20 items combined), 20% is added to the grade.
+gradeScore = Math.max(0, gradeScore)
 
-5. **Cookies Count and Origin**: 30%
-   - If the number of cookies is limited (fewer than 5), and origin analysis shows mostly first-party cookies, 30% is added to the grade.
+// Determine the grade based on the grade score
+if (gradeScore > 8) return 'A'
+else if (gradeScore > 6) return 'B'
+else if (gradeScore > 4) return 'C'
+else if (gradeScore > 2) return 'D'
+else return 'E'
+```
 
-The extension calculates the percentages based on the status of each feature, converts the percentage into a letter grade, and displays the result. A grade score of A indicates a higher level of online security and privacy, while E suggests a lower level of security and privacy.
-
-To calculate the grade, FireFoxSec evaluates the features while taking into account the following aspects:
-
-- Browser security and privacy settings
-- Extensions used and their impact on security and privacy
-- Websites visited and their inherent security practices
-- User behavior, including cookie and browsing history management
+This formula calculates a grade score based on deductions for various privacy and security risks. The score is then mapped to a letter grade to provide an overall assessment of the website's privacy and security posture.
 
 ## How to Use
 
